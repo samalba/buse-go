@@ -62,11 +62,20 @@ type nbdReply struct {
 }
 
 type BuseInterface interface {
-	ReadAt(p []byte, off int64) (int, error)
-	WriteAt(p []byte, off int64) (int, error)
+	ReadAt(p []byte, off uint) error
+	WriteAt(p []byte, off uint) error
 	Disconnect()
-	Flush(int, error)
-	Trim(int, error)
+	Flush() error
+	Trim(off uint, length uint) error
+}
+
+type BuseDevice struct {
+	size       uint
+	device     string
+	driver     BuseInterface
+	deviceFd   uintptr
+	socketPair [2]int
+	op         [5]func(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error
 }
 
 var Endian binary.ByteOrder
@@ -88,45 +97,114 @@ func ioctl(fd, op, arg uintptr) {
 	}
 }
 
-func startNBDClient(deviceFd uintptr, serverSocket int) {
-	ioctl(deviceFd, NBD_SET_SOCK, uintptr(serverSocket))
-	// The call below may fail on some systems (if flags unset), could be ignored
-	ioctl(deviceFd, NBD_SET_FLAGS, NBD_FLAG_SEND_TRIM)
-	// The following call will block until the client disconnects
-	log.Println("Starting NBD client...")
-	ioctl(deviceFd, NBD_DO_IT, 0)
-	log.Println("NBD client disconnected")
-	ioctl(deviceFd, NBD_CLEAR_QUE, 0)
-	ioctl(deviceFd, NBD_CLEAR_SOCK, 0)
+func (bd *BuseDevice) opDeviceRead(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+	if err := bd.driver.ReadAt(chunk, uint(request.from)); err != nil {
+		log.Println("buseDriver.ReadAt returned an error:", err)
+		// Reply with an EPERM
+		reply.err = 1
+	}
+	bufB := new(bytes.Buffer)
+	if err := binary.Write(bufB, Endian, reply); err != nil {
+		return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
+	}
+	if _, err := fp.Write(bufB.Bytes()); err != nil {
+		log.Println("Write error, when sending reply header:", err)
+	}
+	if _, err := fp.Write(chunk); err != nil {
+		log.Println("Write error, when sending data chunk:", err)
+	}
+	return nil
 }
 
-func CreateBuseDevice(device string, size uint, buseDriver BuseInterface) error {
-	sockPair, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
-	if err != nil {
-		return fmt.Errorf("Call to socketpair failed: %s", err)
+func (bd *BuseDevice) opDeviceWrite(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+	if _, err := fp.Read(chunk); err != nil {
+		return fmt.Errorf("Fatal error, cannot read request packet: %s", err)
 	}
-	fp, err := os.Create(device)
-	if err != nil {
-		return fmt.Errorf("Cannot open \"%s\". Make sure you loaded the `nbd' kernel module: %s", device, err)
+	if err := bd.driver.WriteAt(chunk, uint(request.from)); err != nil {
+		log.Println("buseDriver.WriteAt returned an error:", err)
+		reply.err = 1
 	}
-	ioctl(fp.Fd(), NBD_SET_SIZE, uintptr(size))
-	ioctl(fp.Fd(), NBD_CLEAR_SOCK, 0)
-	go startNBDClient(fp.Fd(), sockPair[1])
+	bufB := new(bytes.Buffer)
+	if err := binary.Write(bufB, Endian, reply); err != nil {
+		return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
+	}
+	if _, err := fp.Write(bufB.Bytes()); err != nil {
+		log.Println("Write error, when sending reply header:", err)
+	}
+	return nil
+}
 
+func (bd *BuseDevice) opDeviceDisconnect(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+	log.Println("Calling buseDriver.Disconnect()")
+	bd.driver.Disconnect()
+	return nil
+}
+
+func (bd *BuseDevice) opDeviceFlush(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+	if err := bd.driver.Flush(); err != nil {
+		log.Println("buseDriver.Flush returned an error:", err)
+		reply.err = 1
+	}
+	bufB := new(bytes.Buffer)
+	if err := binary.Write(bufB, Endian, reply); err != nil {
+		return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
+	}
+	if _, err := fp.Write(bufB.Bytes()); err != nil {
+		log.Println("Write error, when sending reply header:", err)
+	}
+	return nil
+}
+
+func (bd *BuseDevice) opDeviceTrim(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+	if err := bd.driver.Trim(uint(request.from), uint(request.length)); err != nil {
+		log.Println("buseDriver.Flush returned an error:", err)
+		reply.err = 1
+	}
+	bufB := new(bytes.Buffer)
+	if err := binary.Write(bufB, Endian, reply); err != nil {
+		return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
+	}
+	if _, err := fp.Write(bufB.Bytes()); err != nil {
+		log.Println("Write error, when sending reply header:", err)
+	}
+	return nil
+}
+
+func (bd *BuseDevice) startNBDClient() {
+	ioctl(bd.deviceFd, NBD_SET_SOCK, uintptr(bd.socketPair[1]))
+	// The call below may fail on some systems (if flags unset), could be ignored
+	ioctl(bd.deviceFd, NBD_SET_FLAGS, NBD_FLAG_SEND_TRIM)
+	// The following call will block until the client disconnects
+	log.Println("Starting NBD client...")
+	ioctl(bd.deviceFd, NBD_DO_IT, 0)
+	log.Println("NBD client disconnected")
+	ioctl(bd.deviceFd, NBD_CLEAR_QUE, 0)
+	ioctl(bd.deviceFd, NBD_CLEAR_SOCK, 0)
+}
+
+// Disconnect disconnects the BuseDevice
+func (bd *BuseDevice) Disconnect() {
+	ioctl(bd.deviceFd, NBD_CLEAR_QUE, 0)
+	ioctl(bd.deviceFd, NBD_CLEAR_SOCK, 0)
+}
+
+// Connect connects a BuseDevice to an actual device file
+// and starts handling requests
+func (bd *BuseDevice) Connect() error {
+	go bd.startNBDClient()
 	//opens the device file at least once, to make sure the partition table is updated
-	tmp, err := os.Open(device)
+	tmp, err := os.Open(bd.device)
 	if err != nil {
-		return fmt.Errorf("Cannot reach the device %s: %s", device, err)
+		return fmt.Errorf("Cannot reach the device %s: %s", bd.device, err)
 	}
 	tmp.Close()
-
+	// Start handling requests
 	request := nbdRequest{}
 	reply := nbdReply{magic: NBD_REPLY_MAGIC}
-	fp = os.NewFile(uintptr(sockPair[0]), "unix")
+	fp := os.NewFile(uintptr(bd.socketPair[0]), "unix")
 	buf := make([]byte, unsafe.Sizeof(request))
-
 	for true {
-		n, err := fp.Read(buf)
+		_, err := fp.Read(buf)
 		if err != nil {
 			log.Println("NBD server stopped:", err)
 			return nil
@@ -136,27 +214,35 @@ func CreateBuseDevice(device string, size uint, buseDriver BuseInterface) error 
 		if err != nil {
 			log.Println("Received invalid NBD request:", err)
 		}
+		reply.handle = request.handle
 		chunk := make([]byte, request.length)
-		if request.typ == NBD_CMD_READ {
-			n, err = buseDriver.ReadAt(chunk, int64(request.from))
-			if err != nil {
-				log.Println("buseDriver.ReadAt returned an error:", err)
-				// Reply with an EPERM
-				reply.err = 1
-			} else {
-				reply.err = uint32(n)
-			}
-			bufB := new(bytes.Buffer)
-			if err := binary.Write(bufB, Endian, reply); err != nil {
-				return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
-			}
-			if _, err := fp.Write(bufB.Bytes()); err != nil {
-				log.Println("Write error, when sending reply header:", err)
-			}
-			if _, err := fp.Write(chunk); err != nil {
-				log.Println("Write error, when sending data chunk:", err)
-			}
+		reply.err = 0
+		// Dispatches READ, WRITE, DISC, FLUSH, TRIM to the corresponding implementation
+		if err = bd.op[request.typ](fp, chunk, &request, &reply); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func CreateBuseDevice(device string, size uint, buseDriver BuseInterface) (*BuseDevice, error) {
+	buseDevice := &BuseDevice{size: size, device: device, driver: buseDriver}
+	sockPair, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	if err != nil {
+		return nil, fmt.Errorf("Call to socketpair failed: %s", err)
+	}
+	fp, err := os.Create(device)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot open \"%s\". Make sure you loaded the `nbd' kernel module: %s", device, err)
+	}
+	buseDevice.deviceFd = fp.Fd()
+	ioctl(buseDevice.deviceFd, NBD_SET_SIZE, uintptr(size))
+	ioctl(buseDevice.deviceFd, NBD_CLEAR_SOCK, 0)
+	buseDevice.socketPair = sockPair
+	buseDevice.op[NBD_CMD_READ] = buseDevice.opDeviceRead
+	buseDevice.op[NBD_CMD_WRITE] = buseDevice.opDeviceWrite
+	buseDevice.op[NBD_CMD_DISC] = buseDevice.opDeviceDisconnect
+	buseDevice.op[NBD_CMD_FLUSH] = buseDevice.opDeviceFlush
+	buseDevice.op[NBD_CMD_TRIM] = buseDevice.opDeviceTrim
+	return buseDevice, nil
 }
