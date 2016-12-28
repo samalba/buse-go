@@ -73,9 +73,10 @@ type BuseDevice struct {
 	size       uint
 	device     string
 	driver     BuseInterface
-	deviceFd   uintptr
+	deviceFp   *os.File
 	socketPair [2]int
 	op         [5]func(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error
+	disconnect chan int
 }
 
 var Endian binary.ByteOrder
@@ -171,27 +172,34 @@ func (bd *BuseDevice) opDeviceTrim(fp *os.File, chunk []byte, request *nbdReques
 }
 
 func (bd *BuseDevice) startNBDClient() {
-	ioctl(bd.deviceFd, NBD_SET_SOCK, uintptr(bd.socketPair[1]))
+	ioctl(bd.deviceFp.Fd(), NBD_SET_SOCK, uintptr(bd.socketPair[1]))
 	// The call below may fail on some systems (if flags unset), could be ignored
-	ioctl(bd.deviceFd, NBD_SET_FLAGS, NBD_FLAG_SEND_TRIM)
+	ioctl(bd.deviceFp.Fd(), NBD_SET_FLAGS, NBD_FLAG_SEND_TRIM)
 	// The following call will block until the client disconnects
 	log.Println("Starting NBD client...")
-	ioctl(bd.deviceFd, NBD_DO_IT, 0)
-	log.Println("NBD client disconnected")
-	ioctl(bd.deviceFd, NBD_CLEAR_QUE, 0)
-	ioctl(bd.deviceFd, NBD_CLEAR_SOCK, 0)
+	go ioctl(bd.deviceFp.Fd(), NBD_DO_IT, 0)
+	// Block on the disconnect channel
+	<-bd.disconnect
 }
 
 // Disconnect disconnects the BuseDevice
 func (bd *BuseDevice) Disconnect() {
-	ioctl(bd.deviceFd, NBD_CLEAR_QUE, 0)
-	ioctl(bd.deviceFd, NBD_CLEAR_SOCK, 0)
+	bd.disconnect <- 1
+	// Ok to fail, ignore errors
+	syscall.Syscall(syscall.SYS_IOCTL, bd.deviceFp.Fd(), NBD_CLEAR_QUE, 0)
+	syscall.Syscall(syscall.SYS_IOCTL, bd.deviceFp.Fd(), NBD_CLEAR_SOCK, 0)
+	// Cleanup fd
+	syscall.Close(bd.socketPair[0])
+	syscall.Close(bd.socketPair[1])
+	bd.deviceFp.Close()
+	log.Println("NBD client disconnected")
 }
 
 // Connect connects a BuseDevice to an actual device file
 // and starts handling requests. It does not return until it's done serving requests.
 func (bd *BuseDevice) Connect() error {
 	go bd.startNBDClient()
+	defer bd.Disconnect()
 	//opens the device file at least once, to make sure the partition table is updated
 	tmp, err := os.Open(bd.device)
 	if err != nil {
@@ -209,7 +217,6 @@ func (bd *BuseDevice) Connect() error {
 			log.Println("NBD server stopped:", err)
 			return nil
 		}
-		fmt.Println(len(buf))
 		bufR := bytes.NewReader(buf)
 		err = binary.Read(bufR, Endian, &request)
 		if err != nil {
@@ -236,14 +243,16 @@ func CreateDevice(device string, size uint, buseDriver BuseInterface) (*BuseDevi
 	if err != nil {
 		return nil, fmt.Errorf("Cannot open \"%s\". Make sure the `nbd' kernel module is loaded: %s", device, err)
 	}
-	buseDevice.deviceFd = fp.Fd()
-	ioctl(buseDevice.deviceFd, NBD_SET_SIZE, uintptr(size))
-	ioctl(buseDevice.deviceFd, NBD_CLEAR_SOCK, 0)
+	buseDevice.deviceFp = fp
+	ioctl(buseDevice.deviceFp.Fd(), NBD_SET_SIZE, uintptr(size))
+	ioctl(buseDevice.deviceFp.Fd(), NBD_CLEAR_QUE, 0)
+	ioctl(buseDevice.deviceFp.Fd(), NBD_CLEAR_SOCK, 0)
 	buseDevice.socketPair = sockPair
 	buseDevice.op[NBD_CMD_READ] = buseDevice.opDeviceRead
 	buseDevice.op[NBD_CMD_WRITE] = buseDevice.opDeviceWrite
 	buseDevice.op[NBD_CMD_DISC] = buseDevice.opDeviceDisconnect
 	buseDevice.op[NBD_CMD_FLUSH] = buseDevice.opDeviceFlush
 	buseDevice.op[NBD_CMD_TRIM] = buseDevice.opDeviceTrim
+	buseDevice.disconnect = make(chan int)
 	return buseDevice, nil
 }

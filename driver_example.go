@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -41,16 +42,28 @@ func (d *DeviceExample) Trim(off, length uint) error {
 	return nil
 }
 
+func usage() {
+    fmt.Fprintf(os.Stderr, "usage: %s /dev/nbd0\n", os.Args[0])
+    flag.PrintDefaults()
+    os.Exit(2)
+}
+
 func main() {
+	flag.Usage = usage
+	flag.Parse()
+	args := flag.Args()
+	if len(args) < 1 {
+		usage()
+	}
 	size := uint(1024 * 1024 * 512) // 512M
 	deviceExp := &DeviceExample{}
 	deviceExp.dataset = make([]byte, size)
-	device, err := buse.CreateDevice("/dev/nbd0", size, deviceExp)
+	device, err := buse.CreateDevice(args[0], size, deviceExp)
 	if err != nil {
 		fmt.Printf("Cannot create device: %s\n", err)
 		os.Exit(1)
 	}
-	sig := make(chan os.Signal, 1)
+	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt)
 	go func() {
 		if err := device.Connect(); err != nil {
@@ -61,5 +74,6 @@ func main() {
 	}()
 	<-sig
 	// Received SIGTERM, cleanup
+	fmt.Println("SIGINT, disconnecting...")
 	device.Disconnect()
 }
