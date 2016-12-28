@@ -231,9 +231,9 @@ func CreateDevice(device string, size uint, buseDriver BuseInterface) (*BuseDevi
 	if err != nil {
 		return nil, fmt.Errorf("Call to socketpair failed: %s", err)
 	}
-	fp, err := os.Create(device)
+	fp, err := os.OpenFile(device, os.O_RDWR, 0600)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot open \"%s\". Make sure you loaded the `nbd' kernel module: %s", device, err)
+		return nil, fmt.Errorf("Cannot open \"%s\". Make sure the `nbd' kernel module is loaded: %s", device, err)
 	}
 	buseDevice.deviceFd = fp.Fd()
 	ioctl(buseDevice.deviceFd, NBD_SET_SIZE, uintptr(size))
