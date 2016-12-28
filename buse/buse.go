@@ -18,7 +18,7 @@ func init() {
 	if byteList[0] == 0 {
 		Endian = binary.BigEndian
 	} else {
-		Endian = binary.BigEndian
+		Endian = binary.LittleEndian
 	}
 }
 
@@ -29,8 +29,8 @@ func ioctl(fd, op, arg uintptr) {
 	}
 }
 
-func (bd *BuseDevice) opDeviceRead(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
-	if err := bd.driver.ReadAt(chunk, uint(request.From)); err != nil {
+func opDeviceRead(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+	if err := driver.ReadAt(chunk, uint(request.From)); err != nil {
 		log.Println("buseDriver.ReadAt returned an error:", err)
 		// Reply with an EPERM
 		reply.Error = 1
@@ -42,17 +42,19 @@ func (bd *BuseDevice) opDeviceRead(fp *os.File, chunk []byte, request *nbdReques
 	if _, err := fp.Write(bufB.Bytes()); err != nil {
 		log.Println("Write error, when sending reply header:", err)
 	}
-	if _, err := fp.Write(chunk); err != nil {
+	n, err := fp.Write(chunk)
+	if err != nil {
 		log.Println("Write error, when sending data chunk:", err)
 	}
+	fmt.Println("DEBUG", n)
 	return nil
 }
 
-func (bd *BuseDevice) opDeviceWrite(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+func opDeviceWrite(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
 	if _, err := fp.Read(chunk); err != nil {
 		return fmt.Errorf("Fatal error, cannot read request packet: %s", err)
 	}
-	if err := bd.driver.WriteAt(chunk, uint(request.From)); err != nil {
+	if err := driver.WriteAt(chunk, uint(request.From)); err != nil {
 		log.Println("buseDriver.WriteAt returned an error:", err)
 		reply.Error = 1
 	}
@@ -66,14 +68,14 @@ func (bd *BuseDevice) opDeviceWrite(fp *os.File, chunk []byte, request *nbdReque
 	return nil
 }
 
-func (bd *BuseDevice) opDeviceDisconnect(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+func opDeviceDisconnect(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
 	log.Println("Calling buseDriver.Disconnect()")
-	bd.driver.Disconnect()
+	driver.Disconnect()
 	return nil
 }
 
-func (bd *BuseDevice) opDeviceFlush(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
-	if err := bd.driver.Flush(); err != nil {
+func opDeviceFlush(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+	if err := driver.Flush(); err != nil {
 		log.Println("buseDriver.Flush returned an error:", err)
 		reply.Error = 1
 	}
@@ -87,8 +89,8 @@ func (bd *BuseDevice) opDeviceFlush(fp *os.File, chunk []byte, request *nbdReque
 	return nil
 }
 
-func (bd *BuseDevice) opDeviceTrim(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
-	if err := bd.driver.Trim(uint(request.From), uint(request.Length)); err != nil {
+func opDeviceTrim(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
+	if err := driver.Trim(uint(request.From), uint(request.Length)); err != nil {
 		log.Println("buseDriver.Flush returned an error:", err)
 		reply.Error = 1
 	}
@@ -118,6 +120,7 @@ func (bd *BuseDevice) Disconnect() {
 	bd.disconnect <- 1
 	// Ok to fail, ignore errors
 	syscall.Syscall(syscall.SYS_IOCTL, bd.deviceFp.Fd(), NBD_CLEAR_QUE, 0)
+	syscall.Syscall(syscall.SYS_IOCTL, bd.deviceFp.Fd(), NBD_DISCONNECT, 0)
 	syscall.Syscall(syscall.SYS_IOCTL, bd.deviceFp.Fd(), NBD_CLEAR_SOCK, 0)
 	// Cleanup fd
 	syscall.Close(bd.socketPair[0])
@@ -151,6 +154,10 @@ func (bd *BuseDevice) Connect() error {
 		if err := binary.Read(bufR, Endian, &request); err != nil {
 			log.Println("Received invalid NBD request:", err)
 		}
+		fmt.Printf("DEBUG %#v\n", request)
+		if request.Magic != NBD_REQUEST_MAGIC {
+			return fmt.Errorf("Fatal error: received packet with wrong Magic number")
+		}
 		reply.Handle = request.Handle
 		chunk := make([]byte, request.Length)
 		reply.Error = 0
@@ -159,7 +166,7 @@ func (bd *BuseDevice) Connect() error {
 			log.Println("Received unknown request:", request.Type)
 			continue
 		}
-		if err := bd.op[request.Type](fp, chunk, &request, &reply); err != nil {
+		if err := bd.op[request.Type](bd.driver, fp, chunk, &request, &reply); err != nil {
 			return err
 		}
 	}
@@ -181,11 +188,11 @@ func CreateDevice(device string, size uint, buseDriver BuseInterface) (*BuseDevi
 	ioctl(buseDevice.deviceFp.Fd(), NBD_CLEAR_QUE, 0)
 	ioctl(buseDevice.deviceFp.Fd(), NBD_CLEAR_SOCK, 0)
 	buseDevice.socketPair = sockPair
-	buseDevice.op[NBD_CMD_READ] = buseDevice.opDeviceRead
-	buseDevice.op[NBD_CMD_WRITE] = buseDevice.opDeviceWrite
-	buseDevice.op[NBD_CMD_DISC] = buseDevice.opDeviceDisconnect
-	buseDevice.op[NBD_CMD_FLUSH] = buseDevice.opDeviceFlush
-	buseDevice.op[NBD_CMD_TRIM] = buseDevice.opDeviceTrim
+	buseDevice.op[NBD_CMD_READ] = opDeviceRead
+	buseDevice.op[NBD_CMD_WRITE] = opDeviceWrite
+	buseDevice.op[NBD_CMD_DISC] = opDeviceDisconnect
+	buseDevice.op[NBD_CMD_FLUSH] = opDeviceFlush
+	buseDevice.op[NBD_CMD_TRIM] = opDeviceTrim
 	buseDevice.disconnect = make(chan int)
 	return buseDevice, nil
 }

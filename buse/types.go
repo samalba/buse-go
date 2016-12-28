@@ -43,16 +43,16 @@ const (
 
 type nbdRequest struct {
 	Magic  uint32
-	Type    uint32
-	Handle [8]byte
+	Type   uint32
+	Handle uint64
 	From   uint64
 	Length uint32
 }
 
 type nbdReply struct {
 	Magic  uint32
-	Error    uint32
-	Handle [8]byte
+	Error  uint32
+	Handle uint64
 }
 
 type BuseInterface interface {
@@ -69,7 +69,6 @@ type BuseDevice struct {
 	driver     BuseInterface
 	deviceFp   *os.File
 	socketPair [2]int
-	op         [5]func(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error
+	op         [5]func(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error
 	disconnect chan int
 }
-
