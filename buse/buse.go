@@ -48,17 +48,17 @@ const (
 )
 
 type nbdRequest struct {
-	magic  uint32
-	typ    uint32
-	handle [8]byte
-	from   uint64
-	length uint32
+	Magic  uint32
+	Type    uint32
+	Handle [8]byte
+	From   uint64
+	Length uint32
 }
 
 type nbdReply struct {
-	magic  uint32
-	err    uint32
-	handle [8]byte
+	Magic  uint32
+	Error    uint32
+	Handle [8]byte
 }
 
 type BuseInterface interface {
@@ -93,15 +93,15 @@ func init() {
 func ioctl(fd, op, arg uintptr) {
 	_, _, ep := syscall.Syscall(syscall.SYS_IOCTL, fd, op, arg)
 	if ep != 0 {
-		log.Fatalf("ioctl(%d, %d, %d) failed: %s", syscall.Errno(ep))
+		log.Fatalf("ioctl(%d, %d, %d) failed: %s", fd, op, arg, syscall.Errno(ep))
 	}
 }
 
 func (bd *BuseDevice) opDeviceRead(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
-	if err := bd.driver.ReadAt(chunk, uint(request.from)); err != nil {
+	if err := bd.driver.ReadAt(chunk, uint(request.From)); err != nil {
 		log.Println("buseDriver.ReadAt returned an error:", err)
 		// Reply with an EPERM
-		reply.err = 1
+		reply.Error = 1
 	}
 	bufB := new(bytes.Buffer)
 	if err := binary.Write(bufB, Endian, reply); err != nil {
@@ -120,9 +120,9 @@ func (bd *BuseDevice) opDeviceWrite(fp *os.File, chunk []byte, request *nbdReque
 	if _, err := fp.Read(chunk); err != nil {
 		return fmt.Errorf("Fatal error, cannot read request packet: %s", err)
 	}
-	if err := bd.driver.WriteAt(chunk, uint(request.from)); err != nil {
+	if err := bd.driver.WriteAt(chunk, uint(request.From)); err != nil {
 		log.Println("buseDriver.WriteAt returned an error:", err)
-		reply.err = 1
+		reply.Error = 1
 	}
 	bufB := new(bytes.Buffer)
 	if err := binary.Write(bufB, Endian, reply); err != nil {
@@ -143,7 +143,7 @@ func (bd *BuseDevice) opDeviceDisconnect(fp *os.File, chunk []byte, request *nbd
 func (bd *BuseDevice) opDeviceFlush(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
 	if err := bd.driver.Flush(); err != nil {
 		log.Println("buseDriver.Flush returned an error:", err)
-		reply.err = 1
+		reply.Error = 1
 	}
 	bufB := new(bytes.Buffer)
 	if err := binary.Write(bufB, Endian, reply); err != nil {
@@ -156,9 +156,9 @@ func (bd *BuseDevice) opDeviceFlush(fp *os.File, chunk []byte, request *nbdReque
 }
 
 func (bd *BuseDevice) opDeviceTrim(fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
-	if err := bd.driver.Trim(uint(request.from), uint(request.length)); err != nil {
+	if err := bd.driver.Trim(uint(request.From), uint(request.Length)); err != nil {
 		log.Println("buseDriver.Flush returned an error:", err)
-		reply.err = 1
+		reply.Error = 1
 	}
 	bufB := new(bytes.Buffer)
 	if err := binary.Write(bufB, Endian, reply); err != nil {
@@ -200,7 +200,7 @@ func (bd *BuseDevice) Connect() error {
 	tmp.Close()
 	// Start handling requests
 	request := nbdRequest{}
-	reply := nbdReply{magic: NBD_REPLY_MAGIC}
+	reply := nbdReply{Magic: NBD_REPLY_MAGIC}
 	fp := os.NewFile(uintptr(bd.socketPair[0]), "unix")
 	buf := make([]byte, unsafe.Sizeof(request))
 	for true {
@@ -209,16 +209,17 @@ func (bd *BuseDevice) Connect() error {
 			log.Println("NBD server stopped:", err)
 			return nil
 		}
+		fmt.Println(len(buf))
 		bufR := bytes.NewReader(buf)
 		err = binary.Read(bufR, Endian, &request)
 		if err != nil {
 			log.Println("Received invalid NBD request:", err)
 		}
-		reply.handle = request.handle
-		chunk := make([]byte, request.length)
-		reply.err = 0
+		reply.Handle = request.Handle
+		chunk := make([]byte, request.Length)
+		reply.Error = 0
 		// Dispatches READ, WRITE, DISC, FLUSH, TRIM to the corresponding implementation
-		if err = bd.op[request.typ](fp, chunk, &request, &reply); err != nil {
+		if err = bd.op[request.Type](fp, chunk, &request, &reply); err != nil {
 			return err
 		}
 	}
