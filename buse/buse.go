@@ -143,21 +143,23 @@ func (bd *BuseDevice) Connect() error {
 	fp := os.NewFile(uintptr(bd.socketPair[0]), "unix")
 	buf := make([]byte, unsafe.Sizeof(request))
 	for true {
-		_, err := fp.Read(buf)
-		if err != nil {
+		if _, err := fp.Read(buf); err != nil {
 			log.Println("NBD server stopped:", err)
 			return nil
 		}
 		bufR := bytes.NewReader(buf)
-		err = binary.Read(bufR, Endian, &request)
-		if err != nil {
+		if err := binary.Read(bufR, Endian, &request); err != nil {
 			log.Println("Received invalid NBD request:", err)
 		}
 		reply.Handle = request.Handle
 		chunk := make([]byte, request.Length)
 		reply.Error = 0
 		// Dispatches READ, WRITE, DISC, FLUSH, TRIM to the corresponding implementation
-		if err = bd.op[request.Type](fp, chunk, &request, &reply); err != nil {
+		if request.Type < NBD_CMD_READ || request.Type > NBD_CMD_TRIM {
+			log.Println("Received unknown request:", request.Type)
+			continue
+		}
+		if err := bd.op[request.Type](fp, chunk, &request, &reply); err != nil {
 			return err
 		}
 	}
