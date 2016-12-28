@@ -189,7 +189,7 @@ func (bd *BuseDevice) Disconnect() {
 }
 
 // Connect connects a BuseDevice to an actual device file
-// and starts handling requests
+// and starts handling requests. It does not return until it's done serving requests.
 func (bd *BuseDevice) Connect() error {
 	go bd.startNBDClient()
 	//opens the device file at least once, to make sure the partition table is updated
@@ -225,7 +225,7 @@ func (bd *BuseDevice) Connect() error {
 	return nil
 }
 
-func CreateBuseDevice(device string, size uint, buseDriver BuseInterface) (*BuseDevice, error) {
+func CreateDevice(device string, size uint, buseDriver BuseInterface) (*BuseDevice, error) {
 	buseDevice := &BuseDevice{size: size, device: device, driver: buseDriver}
 	sockPair, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
 	if err != nil {
