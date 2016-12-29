@@ -1,7 +1,6 @@
 package buse
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -9,18 +8,6 @@ import (
 	"syscall"
 	"unsafe"
 )
-
-var Endian binary.ByteOrder
-
-func init() {
-	var i int = 0x1
-	byteList := (*[unsafe.Sizeof(0)]byte)(unsafe.Pointer(&i))
-	if byteList[0] == 0 {
-		Endian = binary.BigEndian
-	} else {
-		Endian = binary.LittleEndian
-	}
-}
 
 func ioctl(fd, op, arg uintptr) {
 	_, _, ep := syscall.Syscall(syscall.SYS_IOCTL, fd, op, arg)
@@ -35,18 +22,13 @@ func opDeviceRead(driver BuseInterface, fp *os.File, chunk []byte, request *nbdR
 		// Reply with an EPERM
 		reply.Error = 1
 	}
-	bufB := new(bytes.Buffer)
-	if err := binary.Write(bufB, Endian, reply); err != nil {
-		return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
-	}
-	if _, err := fp.Write(bufB.Bytes()); err != nil {
+	buf := writeNbdReply(reply)
+	if _, err := fp.Write(buf); err != nil {
 		log.Println("Write error, when sending reply header:", err)
 	}
-	n, err := fp.Write(chunk)
-	if err != nil {
+	if _, err := fp.Write(chunk); err != nil {
 		log.Println("Write error, when sending data chunk:", err)
 	}
-	fmt.Println("DEBUG", n)
 	return nil
 }
 
@@ -58,11 +40,8 @@ func opDeviceWrite(driver BuseInterface, fp *os.File, chunk []byte, request *nbd
 		log.Println("buseDriver.WriteAt returned an error:", err)
 		reply.Error = 1
 	}
-	bufB := new(bytes.Buffer)
-	if err := binary.Write(bufB, Endian, reply); err != nil {
-		return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
-	}
-	if _, err := fp.Write(bufB.Bytes()); err != nil {
+	buf := writeNbdReply(reply)
+	if _, err := fp.Write(buf); err != nil {
 		log.Println("Write error, when sending reply header:", err)
 	}
 	return nil
@@ -71,7 +50,7 @@ func opDeviceWrite(driver BuseInterface, fp *os.File, chunk []byte, request *nbd
 func opDeviceDisconnect(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
 	log.Println("Calling buseDriver.Disconnect()")
 	driver.Disconnect()
-	return nil
+	return fmt.Errorf("Received a disconnect")
 }
 
 func opDeviceFlush(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
@@ -79,11 +58,8 @@ func opDeviceFlush(driver BuseInterface, fp *os.File, chunk []byte, request *nbd
 		log.Println("buseDriver.Flush returned an error:", err)
 		reply.Error = 1
 	}
-	bufB := new(bytes.Buffer)
-	if err := binary.Write(bufB, Endian, reply); err != nil {
-		return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
-	}
-	if _, err := fp.Write(bufB.Bytes()); err != nil {
+	buf := writeNbdReply(reply)
+	if _, err := fp.Write(buf); err != nil {
 		log.Println("Write error, when sending reply header:", err)
 	}
 	return nil
@@ -94,11 +70,8 @@ func opDeviceTrim(driver BuseInterface, fp *os.File, chunk []byte, request *nbdR
 		log.Println("buseDriver.Flush returned an error:", err)
 		reply.Error = 1
 	}
-	bufB := new(bytes.Buffer)
-	if err := binary.Write(bufB, Endian, reply); err != nil {
-		return fmt.Errorf("Fatal error, cannot write reply packet: %s", err)
-	}
-	if _, err := fp.Write(bufB.Bytes()); err != nil {
+	buf := writeNbdReply(reply)
+	if _, err := fp.Write(buf); err != nil {
 		log.Println("Write error, when sending reply header:", err)
 	}
 	return nil
@@ -129,6 +102,22 @@ func (bd *BuseDevice) Disconnect() {
 	log.Println("NBD client disconnected")
 }
 
+func readNbdRequest(buf []byte, request *nbdRequest) {
+	request.Magic = binary.BigEndian.Uint32(buf)
+	request.Type = binary.BigEndian.Uint32(buf[4:8])
+	request.Handle = binary.BigEndian.Uint64(buf[8:16])
+	request.From = binary.BigEndian.Uint64(buf[16:24])
+	request.Length = binary.BigEndian.Uint32(buf[24:28])
+}
+
+func writeNbdReply(reply *nbdReply) []byte {
+	buf := make([]byte, unsafe.Sizeof(*reply))
+	binary.BigEndian.PutUint32(buf[0:4], NBD_REPLY_MAGIC)
+	binary.BigEndian.PutUint32(buf[4:8], reply.Error)
+	binary.BigEndian.PutUint64(buf[8:16], reply.Handle)
+	return buf
+}
+
 // Connect connects a BuseDevice to an actual device file
 // and starts handling requests. It does not return until it's done serving requests.
 func (bd *BuseDevice) Connect() error {
@@ -150,10 +139,7 @@ func (bd *BuseDevice) Connect() error {
 			log.Println("NBD server stopped:", err)
 			return nil
 		}
-		bufR := bytes.NewReader(buf)
-		if err := binary.Read(bufR, Endian, &request); err != nil {
-			log.Println("Received invalid NBD request:", err)
-		}
+		readNbdRequest(buf, &request)
 		fmt.Printf("DEBUG %#v\n", request)
 		if request.Magic != NBD_REQUEST_MAGIC {
 			return fmt.Errorf("Fatal error: received packet with wrong Magic number")
@@ -193,6 +179,6 @@ func CreateDevice(device string, size uint, buseDriver BuseInterface) (*BuseDevi
 	buseDevice.op[NBD_CMD_DISC] = opDeviceDisconnect
 	buseDevice.op[NBD_CMD_FLUSH] = opDeviceFlush
 	buseDevice.op[NBD_CMD_TRIM] = opDeviceTrim
-	buseDevice.disconnect = make(chan int)
+	buseDevice.disconnect = make(chan int, 5)
 	return buseDevice, nil
 }

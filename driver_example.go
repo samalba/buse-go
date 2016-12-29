@@ -43,9 +43,9 @@ func (d *DeviceExample) Trim(off, length uint) error {
 }
 
 func usage() {
-    fmt.Fprintf(os.Stderr, "usage: %s /dev/nbd0\n", os.Args[0])
-    flag.PrintDefaults()
-    os.Exit(2)
+	fmt.Fprintf(os.Stderr, "usage: %s /dev/nbd0\n", os.Args[0])
+	flag.PrintDefaults()
+	os.Exit(2)
 }
 
 func main() {
