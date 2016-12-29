@@ -1,4 +1,6 @@
-# Go-native block device in user space
+# Go block device in user space for Linux
+
+## How to use it
 
 Checkout the file driver_example.go for a simple in-memory block device.
 
@@ -20,3 +22,7 @@ echo it works > /mnt/test/foo
 ```
 
 You can check out the logs in the first terminal...
+
+## How does it work?
+
+It uses NBD (Network Block Device) behind the scene. A NBD server and client is automatically setup on the same machine. This project has been inspired by [BUSE in C](https://github.com/acozzette/BUSE).
