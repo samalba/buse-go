@@ -115,7 +115,8 @@ func writeNbdReply(reply *nbdReply) []byte {
 	binary.BigEndian.PutUint32(buf[0:4], NBD_REPLY_MAGIC)
 	binary.BigEndian.PutUint32(buf[4:8], reply.Error)
 	binary.BigEndian.PutUint64(buf[8:16], reply.Handle)
-	return buf
+	// NOTE: a struct in go has 4 extra bytes, so we skip the last
+	return buf[0:16]
 }
 
 // Connect connects a BuseDevice to an actual device file
@@ -133,9 +134,10 @@ func (bd *BuseDevice) Connect() error {
 	request := nbdRequest{}
 	reply := nbdReply{Magic: NBD_REPLY_MAGIC}
 	fp := os.NewFile(uintptr(bd.socketPair[0]), "unix")
+	// NOTE: a struct in go has 4 extra bytes...
 	buf := make([]byte, unsafe.Sizeof(request))
 	for true {
-		if _, err := fp.Read(buf); err != nil {
+		if _, err := fp.Read(buf[0:28]); err != nil {
 			log.Println("NBD server stopped:", err)
 			return nil
 		}
