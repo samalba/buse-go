@@ -1,4 +1,4 @@
-# Go block device in user space for Linux
+# Linux block device in user space in Golang
 
 ## How to use it
 
