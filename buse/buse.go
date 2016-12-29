@@ -3,6 +3,7 @@ package buse
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"syscall"
@@ -33,7 +34,7 @@ func opDeviceRead(driver BuseInterface, fp *os.File, chunk []byte, request *nbdR
 }
 
 func opDeviceWrite(driver BuseInterface, fp *os.File, chunk []byte, request *nbdRequest, reply *nbdReply) error {
-	if _, err := fp.Read(chunk); err != nil {
+	if _, err := io.ReadFull(fp, chunk); err != nil {
 		return fmt.Errorf("Fatal error, cannot read request packet: %s", err)
 	}
 	if err := driver.WriteAt(chunk, uint(request.From)); err != nil {
@@ -138,8 +139,7 @@ func (bd *BuseDevice) Connect() error {
 	buf := make([]byte, unsafe.Sizeof(request))
 	for true {
 		if _, err := fp.Read(buf[0:28]); err != nil {
-			log.Println("NBD server stopped:", err)
-			return nil
+			return fmt.Errorf("NBD client stopped: %s", err)
 		}
 		readNbdRequest(buf, &request)
 		fmt.Printf("DEBUG %#v\n", request)
