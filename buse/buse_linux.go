@@ -1,5 +1,7 @@
 package buse
 
+// +build linux
+
 import (
 	"encoding/binary"
 	"fmt"
