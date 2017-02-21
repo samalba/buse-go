@@ -79,6 +79,10 @@ func opDeviceTrim(driver BuseInterface, fp *os.File, chunk []byte, request *nbdR
 }
 
 func (bd *BuseDevice) startNBDClient() {
+	if bd.blockSize > 0 {
+		// If a custom block size has been set, otherwise use the default
+		ioctl(bd.deviceFp.Fd(), NBD_SET_BLKSIZE, bd.blockSize)
+	}
 	ioctl(bd.deviceFp.Fd(), NBD_SET_SOCK, uintptr(bd.socketPair[1]))
 	// The call below may fail on some systems (if flags unset), could be ignored
 	ioctl(bd.deviceFp.Fd(), NBD_SET_FLAGS, NBD_FLAG_SEND_TRIM)
@@ -161,8 +165,10 @@ func (bd *BuseDevice) Connect() error {
 	return nil
 }
 
-func CreateDevice(device string, size uint, buseDriver BuseInterface) (*BuseDevice, error) {
-	buseDevice := &BuseDevice{size: size, device: device, driver: buseDriver}
+// CreateDevice is the entrypoint to create a new device
+// blockSize is optional (set 0 to use the default)
+func CreateDevice(device string, size uint, blockSize uint, buseDriver BuseInterface) (*BuseDevice, error) {
+	buseDevice := &BuseDevice{size: size, blockSize: blockSize, device: device, driver: buseDriver}
 	sockPair, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		return nil, fmt.Errorf("Call to socketpair failed: %s", err)

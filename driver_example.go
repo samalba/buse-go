@@ -58,7 +58,7 @@ func main() {
 	size := uint(1024 * 1024 * 512) // 512M
 	deviceExp := &DeviceExample{}
 	deviceExp.dataset = make([]byte, size)
-	device, err := buse.CreateDevice(args[0], size, deviceExp)
+	device, err := buse.CreateDevice(args[0], size, 0, deviceExp)
 	if err != nil {
 		fmt.Printf("Cannot create device: %s\n", err)
 		os.Exit(1)

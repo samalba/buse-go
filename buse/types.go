@@ -65,6 +65,7 @@ type BuseInterface interface {
 
 type BuseDevice struct {
 	size       uint
+	blockSize  uint
 	device     string
 	driver     BuseInterface
 	deviceFp   *os.File
