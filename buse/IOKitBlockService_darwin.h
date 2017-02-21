@@ -3,7 +3,6 @@
 
 #include <IOKit/IOService.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>
-#include <sys/kpi_socket.h>
 
 #include "IOKitDiskStorageDevice_darwin.h"
 
@@ -15,7 +14,6 @@ class buse_go_BlockService : public IOService
 private:
 	IOBufferMemoryDescriptor *memory;
 	void *buffer;
-	socket_t *socket;   /* 0 when uninitialized / not yet connected / error occurred and we disconnected */
 	UInt64 size;
 	buse_go_DiskStorageDevice *nub;
 	
