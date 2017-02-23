@@ -1,0 +1,305 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		736209EF1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 736209EB1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.cpp */; };
+		736209F01E5E8C18004B3651 /* NBDLiteDiskStorageDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 736209EC1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.h */; };
+		736209F11E5E8C18004B3651 /* NBDLiteBlockService.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 736209ED1E5E8C18004B3651 /* NBDLiteBlockService.cpp */; };
+		736209F21E5E8C18004B3651 /* NBDLiteBlockService.h in Headers */ = {isa = PBXBuildFile; fileRef = 736209EE1E5E8C18004B3651 /* NBDLiteBlockService.h */; };
+		737738351E5D126800E28B7E /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 737738341E5D126800E28B7E /* IOKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		736209EB1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NBDLiteDiskStorageDevice.cpp; sourceTree = "<group>"; };
+		736209EC1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NBDLiteDiskStorageDevice.h; sourceTree = "<group>"; };
+		736209ED1E5E8C18004B3651 /* NBDLiteBlockService.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NBDLiteBlockService.cpp; sourceTree = "<group>"; };
+		736209EE1E5E8C18004B3651 /* NBDLiteBlockService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NBDLiteBlockService.h; sourceTree = "<group>"; };
+		737738261E5D11D600E28B7E /* NBDLite.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NBDLite.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		7377382D1E5D11D600E28B7E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		737738341E5D126800E28B7E /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		737738361E5D129000E28B7E /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = System/Library/Frameworks/Kernel.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		737738221E5D11D500E28B7E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				737738351E5D126800E28B7E /* IOKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		7377381C1E5D11D500E28B7E = {
+			isa = PBXGroup;
+			children = (
+				737738281E5D11D600E28B7E /* NBDLite */,
+				737738271E5D11D600E28B7E /* Products */,
+				737738331E5D126700E28B7E /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		737738271E5D11D600E28B7E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				737738261E5D11D600E28B7E /* NBDLite.kext */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		737738281E5D11D600E28B7E /* NBDLite */ = {
+			isa = PBXGroup;
+			children = (
+				736209EB1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.cpp */,
+				736209EC1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.h */,
+				736209ED1E5E8C18004B3651 /* NBDLiteBlockService.cpp */,
+				736209EE1E5E8C18004B3651 /* NBDLiteBlockService.h */,
+				7377382D1E5D11D600E28B7E /* Info.plist */,
+			);
+			path = NBDLite;
+			sourceTree = "<group>";
+		};
+		737738331E5D126700E28B7E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				737738361E5D129000E28B7E /* Kernel.framework */,
+				737738341E5D126800E28B7E /* IOKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		737738231E5D11D500E28B7E /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				736209F01E5E8C18004B3651 /* NBDLiteDiskStorageDevice.h in Headers */,
+				736209F21E5E8C18004B3651 /* NBDLiteBlockService.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		737738251E5D11D500E28B7E /* NBDLite */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 737738301E5D11D600E28B7E /* Build configuration list for PBXNativeTarget "NBDLite" */;
+			buildPhases = (
+				737738211E5D11D500E28B7E /* Sources */,
+				737738221E5D11D500E28B7E /* Frameworks */,
+				737738231E5D11D500E28B7E /* Headers */,
+				737738241E5D11D500E28B7E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NBDLite;
+			productName = NBDLite;
+			productReference = 737738261E5D11D600E28B7E /* NBDLite.kext */;
+			productType = "com.apple.product-type.kernel-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7377381D1E5D11D500E28B7E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0820;
+				ORGANIZATIONNAME = "Sam Alba";
+				TargetAttributes = {
+					737738251E5D11D500E28B7E = {
+						CreatedOnToolsVersion = 8.2.1;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 737738201E5D11D500E28B7E /* Build configuration list for PBXProject "NBDLite" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 7377381C1E5D11D500E28B7E;
+			productRefGroup = 737738271E5D11D600E28B7E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				737738251E5D11D500E28B7E /* NBDLite */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		737738241E5D11D500E28B7E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		737738211E5D11D500E28B7E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				736209F11E5E8C18004B3651 /* NBDLiteBlockService.cpp in Sources */,
+				736209EF1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		7377382E1E5D11D600E28B7E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		7377382F1E5D11D600E28B7E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		737738311E5D11D600E28B7E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				INFOPLIST_FILE = NBDLite/Info.plist;
+				MODULE_NAME = Zaphod.NBDLite;
+				MODULE_VERSION = 1.0.0d1;
+				PRODUCT_BUNDLE_IDENTIFIER = Zaphod.NBDLite;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = kext;
+			};
+			name = Debug;
+		};
+		737738321E5D11D600E28B7E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				INFOPLIST_FILE = NBDLite/Info.plist;
+				MODULE_NAME = Zaphod.NBDLite;
+				MODULE_VERSION = 1.0.0d1;
+				PRODUCT_BUNDLE_IDENTIFIER = Zaphod.NBDLite;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = kext;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		737738201E5D11D500E28B7E /* Build configuration list for PBXProject "NBDLite" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7377382E1E5D11D600E28B7E /* Debug */,
+				7377382F1E5D11D600E28B7E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		737738301E5D11D600E28B7E /* Build configuration list for PBXNativeTarget "NBDLite" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				737738311E5D11D600E28B7E /* Debug */,
+				737738321E5D11D600E28B7E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 7377381D1E5D11D500E28B7E /* Project object */;
+}
