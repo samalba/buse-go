@@ -11,7 +11,6 @@
 		736209F01E5E8C18004B3651 /* NBDLiteDiskStorageDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 736209EC1E5E8C18004B3651 /* NBDLiteDiskStorageDevice.h */; };
 		736209F11E5E8C18004B3651 /* NBDLiteBlockService.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 736209ED1E5E8C18004B3651 /* NBDLiteBlockService.cpp */; };
 		736209F21E5E8C18004B3651 /* NBDLiteBlockService.h in Headers */ = {isa = PBXBuildFile; fileRef = 736209EE1E5E8C18004B3651 /* NBDLiteBlockService.h */; };
-		737738351E5D126800E28B7E /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 737738341E5D126800E28B7E /* IOKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,8 +20,6 @@
 		736209EE1E5E8C18004B3651 /* NBDLiteBlockService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NBDLiteBlockService.h; sourceTree = "<group>"; };
 		737738261E5D11D600E28B7E /* NBDLite.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NBDLite.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		7377382D1E5D11D600E28B7E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		737738341E5D126800E28B7E /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
-		737738361E5D129000E28B7E /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = System/Library/Frameworks/Kernel.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -30,7 +27,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				737738351E5D126800E28B7E /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -69,8 +65,6 @@
 		737738331E5D126700E28B7E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				737738361E5D129000E28B7E /* Kernel.framework */,
-				737738341E5D126800E28B7E /* IOKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

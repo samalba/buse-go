@@ -31,3 +31,5 @@ vendor/
 
 buse-go
 .DS_Store
+xcuserdata/
+Build/
