@@ -1,17 +1,17 @@
-#ifndef __BUSE_GO__DiskStorageDevice__
-#define __BUSE_GO__DiskStorageDevice__
+#ifndef __NBDLiteDiskStorageDevice__
+#define __NBDLiteDiskStorageDevice__
 
 #include <IOKit/storage/IOBlockStorageDevice.h>
 
 
-class buse_go_BlockService;
+class NBDLiteBlockService;
 
-class buse_go_DiskStorageDevice : public IOBlockStorageDevice
+class NBDLiteDiskStorageDevice : public IOBlockStorageDevice
 {
-	OSDeclareDefaultStructors(buse_go_DiskStorageDevice)
+	OSDeclareDefaultStructors(NBDLiteDiskStorageDevice)
 	
 private:
-	buse_go_BlockService *provider;
+	NBDLiteBlockService *provider;
 	UInt64 blockCount;
 	bool lastAskedState;
 
@@ -24,10 +24,10 @@ public:
 	virtual UInt32 doGetFormatCapacities(UInt64 *byteCapacity, UInt32 capacitiesMaxCount) const;
 	virtual IOReturn doLockUnlockMedia(bool doLock);
 	virtual IOReturn doSynchronizeCache();
-	virtual char * getVendorString();
-	virtual char * getProductString();
-	virtual char * getRevisionString();
-	virtual char * getAdditionalDeviceInfoString();
+	virtual char *getVendorString();
+	virtual char *getProductString();
+	virtual char *getRevisionString();
+	virtual char *getAdditionalDeviceInfoString();
 	virtual IOReturn reportBlockSize(UInt64 *blockSize);
 	virtual IOReturn reportEjectability(bool *isEjectable);
 	virtual IOReturn reportLockability(bool *isLockable);
@@ -41,4 +41,4 @@ public:
 	virtual IOReturn doAsyncReadWrite(IOMemoryDescriptor *buffer, UInt64 block, UInt64 nblks, IOStorageAttributes *attributes, IOStorageCompletion *completion);
 };
 
-#endif /* !__BUSE_GO__DiskStorageDevice__ */
+#endif /* !__NBDLiteDiskStorageDevice__ */

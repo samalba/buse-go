@@ -12,29 +12,29 @@
 #include <IOKit/IOLib.h>
 #include <IOKit/IOKitKeys.h>
 #include <IOKit/storage/IOMedia.h>
-#include "IOKitDiskStorageDevice_darwin.h"
-#include "IOKitBlockService_darwin.h"
+#include "NBDLiteDiskStorageDevice.h"
+#include "NBDLiteBlockService.h"
 
 #define super IOBlockStorageDevice
 
 
-OSDefineMetaClassAndStructors(buse_go_DiskStorageDevice, super)
+OSDefineMetaClassAndStructors(NBDLiteDiskStorageDevice, super)
 
 
-bool buse_go_DiskStorageDevice::init(OSDictionary *properties)
+bool NBDLiteDiskStorageDevice::init(OSDictionary *properties)
 {
 	if (!super::init(properties))
 		return false;
-	this->setProperty(kIOBSDNameKey, "buse-go");
+	this->setProperty(kIOBSDNameKey, "NBDLite");
 	this->setProperty(kIOBSDMajorKey, 92);
 	return true;
 }
 
-bool buse_go_DiskStorageDevice::attach(IOService *provider)
+bool NBDLiteDiskStorageDevice::attach(IOService *provider)
 {
 	if (!super::attach(provider))
 		return false;
-	this->provider = OSDynamicCast(buse_go_BlockService, provider);
+	this->provider = OSDynamicCast(NBDLiteBlockService, provider);
 	if (!this->provider)
 		return false;
 	if (this->provider->getByteCount() % this->provider->getBlockSize())
@@ -44,25 +44,25 @@ bool buse_go_DiskStorageDevice::attach(IOService *provider)
 	return true;
 }
 
-void buse_go_DiskStorageDevice::detach(IOService *provider)
+void NBDLiteDiskStorageDevice::detach(IOService *provider)
 {
 	if (provider == this->provider)
 		this->provider = NULL;
 	super::detach(provider);
 }
 
-IOReturn buse_go_DiskStorageDevice::doEjectMedia()
+IOReturn NBDLiteDiskStorageDevice::doEjectMedia()
 {
 	this->provider->doEjectMedia();
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::doFormatMedia(UInt64 byteCapacity)
+IOReturn NBDLiteDiskStorageDevice::doFormatMedia(UInt64 byteCapacity)
 {
 	return kIOReturnUnsupported;
 }
 
-UInt32 buse_go_DiskStorageDevice::doGetFormatCapacities(UInt64 *byteCapacities, UInt32 capacitiesMaxCount) const
+UInt32 NBDLiteDiskStorageDevice::doGetFormatCapacities(UInt64 *byteCapacities, UInt32 capacitiesMaxCount) const
 {
 	if (!byteCapacities)
 		return 1;
@@ -72,63 +72,63 @@ UInt32 buse_go_DiskStorageDevice::doGetFormatCapacities(UInt64 *byteCapacities, 
 	return 1;
 }
 
-IOReturn buse_go_DiskStorageDevice::doLockUnlockMedia(bool doLock)
+IOReturn NBDLiteDiskStorageDevice::doLockUnlockMedia(bool doLock)
 {
 	if (doLock)
 		return kIOReturnUnsupported;
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::doSynchronizeCache()
+IOReturn NBDLiteDiskStorageDevice::doSynchronizeCache()
 {
 	return kIOReturnSuccess;
 }
 
-char *buse_go_DiskStorageDevice::getVendorString()
+char *NBDLiteDiskStorageDevice::getVendorString()
 {
 	return (char *) "(networked)";
 }
 
-char *buse_go_DiskStorageDevice::getProductString()
+char *NBDLiteDiskStorageDevice::getProductString()
 {
 	return (char *) "Buse-go Disk";
 }
 
-char *buse_go_DiskStorageDevice::getRevisionString()
+char *NBDLiteDiskStorageDevice::getRevisionString()
 {
 	return (char *) "1";
 }
 
-char *buse_go_DiskStorageDevice::getAdditionalDeviceInfoString()
+char *NBDLiteDiskStorageDevice::getAdditionalDeviceInfoString()
 {
 	return (char *) "buse-go device size=%lld bytes";
 }
 
-IOReturn buse_go_DiskStorageDevice::reportBlockSize(UInt64 *blockSize)
+IOReturn NBDLiteDiskStorageDevice::reportBlockSize(UInt64 *blockSize)
 {
 	*blockSize = (UInt64) this->provider->getBlockSize();
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::reportEjectability(bool *isEjectable)
+IOReturn NBDLiteDiskStorageDevice::reportEjectability(bool *isEjectable)
 {
 	*isEjectable = true;
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::reportLockability(bool *isLockable)
+IOReturn NBDLiteDiskStorageDevice::reportLockability(bool *isLockable)
 {
 	*isLockable = false;
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::reportMaxValidBlock(UInt64 *maxBlock)
+IOReturn NBDLiteDiskStorageDevice::reportMaxValidBlock(UInt64 *maxBlock)
 {
 	*maxBlock = this->blockCount - 1;
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::reportMediaState(bool *mediaPresent, bool *changedState)
+IOReturn NBDLiteDiskStorageDevice::reportMediaState(bool *mediaPresent, bool *changedState)
 {
 	const bool ready = (this->provider && this->provider->isReady());
 	*mediaPresent = ready;
@@ -137,43 +137,43 @@ IOReturn buse_go_DiskStorageDevice::reportMediaState(bool *mediaPresent, bool *c
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::reportPollRequirements(bool *pollRequired, bool *pollIsExpensive)
+IOReturn NBDLiteDiskStorageDevice::reportPollRequirements(bool *pollRequired, bool *pollIsExpensive)
 {
 	*pollRequired = true;
 	*pollIsExpensive = false;
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::reportRemovability(bool *isRemovable)
+IOReturn NBDLiteDiskStorageDevice::reportRemovability(bool *isRemovable)
 {
 	*isRemovable = true;
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::reportWriteProtection(bool *isWriteProtected)
+IOReturn NBDLiteDiskStorageDevice::reportWriteProtection(bool *isWriteProtected)
 {
 	*isWriteProtected = ! (this->provider && this->provider->isWritable());
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::getWriteCacheState(bool *enabled)
+IOReturn NBDLiteDiskStorageDevice::getWriteCacheState(bool *enabled)
 {
 	*enabled = false;
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::setWriteCacheState(bool enabled)
+IOReturn NBDLiteDiskStorageDevice::setWriteCacheState(bool enabled)
 {
 	if (enabled)
 		return kIOReturnUnsupported;
 	return kIOReturnSuccess;
 }
 
-IOReturn buse_go_DiskStorageDevice::doAsyncReadWrite(IOMemoryDescriptor *buffer, UInt64 block, UInt64 nblks, IOStorageAttributes *attributes, IOStorageCompletion *completion)
+IOReturn NBDLiteDiskStorageDevice::doAsyncReadWrite(IOMemoryDescriptor *buffer, UInt64 block, UInt64 nblks, IOStorageAttributes *attributes, IOStorageCompletion *completion)
 {
 	IOByteCount actualCount = 0;
 	
-	buse_go_BlockService *provider = this->provider;
+	NBDLiteBlockService *provider = this->provider;
 	if (!(provider && this->provider->isReady()) )
 		return kIOReturnNotAttached;
 	if ((block + nblks) > (this->blockCount) )

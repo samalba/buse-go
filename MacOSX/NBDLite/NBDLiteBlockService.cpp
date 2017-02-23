@@ -1,47 +1,47 @@
 #include <IOKit/IOLib.h>
-#include "IOKitBlockService_darwin.h"
-#include "IOKitDiskStorageDevice_darwin.h"
+#include "NBDLiteBlockService.h"
+#include "NBDLiteDiskStorageDevice.h"
 
-OSDefineMetaClassAndStructors(buse_go_BlockService, IOService)
+OSDefineMetaClassAndStructors(NBDLiteBlockService, IOService)
 
 #define FIXED_BLOCK_SIZE (512)
 
 #define super IOService
 
 
-void buse_go_BlockService::setSizeMB(int sizeMB)
+void NBDLiteBlockService::setSizeMB(int sizeMB)
 {
 	this->size = ((UInt64) 1048576) * ((UInt64) sizeMB);
 }
 
-UInt64 buse_go_BlockService::getByteCount() const
+UInt64 NBDLiteBlockService::getByteCount() const
 {
 	return this->size;
 }
 
-UInt32 buse_go_BlockService::getBlockSize() const
+UInt32 NBDLiteBlockService::getBlockSize() const
 {
 	return FIXED_BLOCK_SIZE;
 }
 
-bool buse_go_BlockService::isWritable()
+bool NBDLiteBlockService::isWritable()
 {
 	return true;
 }
 
-bool buse_go_BlockService::isReady()
+bool NBDLiteBlockService::isReady()
 {
 	return true;
 }
 
-bool buse_go_BlockService::start(IOService *provider)
+bool NBDLiteBlockService::start(IOService *provider)
 {
 	IOLog("block svc starting\n");
 	this->memory = NULL;
 	this->buffer = NULL;
 	this->nub = NULL;
 
-	if (! super::start(provider))
+	if (!super::start(provider))
 		return false;
 	this->memory = IOBufferMemoryDescriptor::withCapacity(this->getByteCount(), kIODirectionInOut);
 	if (!this->memory)
@@ -53,7 +53,7 @@ bool buse_go_BlockService::start(IOService *provider)
 		this->memory = NULL;
 		return false;
 	}
-	if (! this->buildDevice())
+	if (!this->buildDevice())
 	{
 		this->memory->release();
 		this->memory = NULL;
@@ -63,7 +63,7 @@ bool buse_go_BlockService::start(IOService *provider)
 	return true;
 }
 
-void buse_go_BlockService::free()
+void NBDLiteBlockService::free()
 {
 	IOLog("busego-blockservice: freeing this\n");
 
@@ -81,7 +81,7 @@ void buse_go_BlockService::free()
 	super::free();
 }
 
-IOReturn buse_go_BlockService::doEjectMedia()
+IOReturn NBDLiteBlockService::doEjectMedia()
 {
 	IOLog("block svc ejecting\n");
 	if (this->nub)
@@ -98,19 +98,19 @@ IOReturn buse_go_BlockService::doEjectMedia()
 	return kIOReturnSuccess;
 }
 
-IOByteCount buse_go_BlockService::performRead(IOMemoryDescriptor *dest, UInt64 offset, UInt64 count)
+IOByteCount NBDLiteBlockService::performRead(IOMemoryDescriptor *dest, UInt64 offset, UInt64 count)
 {
 	return dest->writeBytes(0, (void *)(((UInt64) (this->buffer)) + offset), count);
 }
 
-IOByteCount buse_go_BlockService::performWrite(IOMemoryDescriptor *src, UInt64 offset, UInt64 count)
+IOByteCount NBDLiteBlockService::performWrite(IOMemoryDescriptor *src, UInt64 offset, UInt64 count)
 {
 	return src->readBytes(0, (void *)(((UInt64) (this->buffer)) + offset), count);
 }
 
-bool buse_go_BlockService::buildDevice()
+bool NBDLiteBlockService::buildDevice()
 {
-	this->nub = new buse_go_DiskStorageDevice();
+	this->nub = new NBDLiteDiskStorageDevice();
 	if (!this->nub)
 		return false;
 	if (!this->nub->init(NULL))

@@ -1,21 +1,21 @@
-#ifndef __BUSE_GO__BlockService__
-#define __BUSE_GO__BlockService__
+#ifndef __NBDLiteBlockService__
+#define __NBDLiteBlockService__
 
 #include <IOKit/IOService.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>
 
-#include "IOKitDiskStorageDevice_darwin.h"
+#include "NBDLiteDiskStorageDevice.h"
 
 
-class buse_go_BlockService : public IOService
+class NBDLiteBlockService : public IOService
 {
-	OSDeclareDefaultStructors(buse_go_BlockService)
+	OSDeclareDefaultStructors(NBDLiteBlockService)
 
 private:
 	IOBufferMemoryDescriptor *memory;
 	void *buffer;
 	UInt64 size;
-	buse_go_DiskStorageDevice *nub;
+	NBDLiteDiskStorageDevice *nub;
 	
 protected:
 	bool buildDevice();
@@ -36,4 +36,4 @@ public:
 };
 
 
-#endif /* !__BUSE_GO__BlockService__ */
+#endif /* !__NBDLiteBlockService__ */
